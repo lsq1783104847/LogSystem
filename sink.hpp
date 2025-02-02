@@ -19,7 +19,7 @@ namespace log_system
     public:
         using ptr = std::shared_ptr<LogSink>;
         virtual bool log(const std::string &msg) = 0;
-        virtual ~LogSink() = 0;
+        virtual ~LogSink() {};
     };
     // 标准输出落地类
     // 将日志输出到标准输出中
