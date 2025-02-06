@@ -19,7 +19,7 @@ namespace log_system
             OFF
         };
         // 根据日志等级转化成对应字符串
-        static const std::string toString(Level::value val)
+        static const std::string to_string(Level::value val)
         {
             if (val == DEBUG)
                 return "DEBUG";
