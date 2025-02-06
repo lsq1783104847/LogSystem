@@ -12,7 +12,7 @@ namespace log_system
     struct LogMsg
     {
         using ptr = std::shared_ptr<LogMsg>;
-
+        LogMsg() = default;
         LogMsg(const std::string &filename, size_t line, time_t time,
                std::thread::id tid, const std::string &logggername,
                const std::string &main_message, Level::value level)

@@ -93,7 +93,6 @@ namespace log_system
         {
             if (!_state || !_ofs.good())
                 return false;
-            _ofs << msg;
             long long fsize = get_file_size();
             if (fsize == -1)
                 return false;
@@ -104,6 +103,7 @@ namespace log_system
                 _ofs.open(_cur_filename, std::ios::binary | std::ios::app);
                 _state = _ofs.is_open();
             }
+            _ofs << msg;
             return _ofs.good();
         }
 

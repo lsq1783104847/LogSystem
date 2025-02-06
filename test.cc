@@ -3,14 +3,32 @@
 #include "level.hpp"
 #include "sink.hpp"
 #include "format_message.hpp"
+#include "logger.hpp"
 #include "util.hpp"
 
 using namespace std;
 
 int main()
 {
-    log_system::LogMsg lm(__FILE__, __LINE__, time(nullptr), std::this_thread::get_id(), "lsq", "日志测试", log_system::Level::FATAL);
-    std::cout << log_system::LogFmt("%t[%D_%D_%T_%T]%n[%i_%L_%N_%f_%l_%m_%%]", lm).get_result() << std::endl;
+    log_system::LogSink::ptr Stdoutptr = log_system::SinkFactory::create<log_system::StdoutSink>();
+    log_system::LogSink::ptr Fileptr = log_system::SinkFactory::create<log_system::FileSink>("./data/file.log");
+    log_system::LogSink::ptr RollFileSinkBySizeptr = log_system::SinkFactory::create<log_system::RollFileSinkBySize>("./data/file.log", 1024);
+    std::vector<log_system::LogSink::ptr> sinks = {Stdoutptr, Fileptr, RollFileSinkBySizeptr};
+    log_system::Logger::ptr logger(new log_system::SynLogger("synlogger", "%t[%D_%T]%n%t[%f:%l:%L:%N]%n%t[%m]%n", {Stdoutptr, Fileptr, RollFileSinkBySizeptr}, log_system::Level::WARN));
+
+    logger->log(log_system::Level::DEBUG, __FILE__, __LINE__, "日志输出测试-DEBUG");
+    logger->log(log_system::Level::INFO, __FILE__, __LINE__, "日志输出测试-INFO");
+    logger->log(log_system::Level::WARN, __FILE__, __LINE__, "日志输出测试-WARN");
+    logger->log(log_system::Level::ERROR, __FILE__, __LINE__, "日志输出测试-ERROR");
+    logger->log(log_system::Level::FATAL, __FILE__, __LINE__, "日志输出测试-FATAL");
+    for (int i = 0; i < 50000; i++)
+    {
+        logger->log(log_system::Level::ERROR, __FILE__, __LINE__, "日志输出测试-%d", i);
+        usleep(100);
+    }
+
+    // log_system::LogMsg lm(__FILE__, __LINE__, time(nullptr), std::this_thread::get_id(), "lsq", "日志测试", log_system::Level::FATAL);
+    // std::cout << log_system::LogFmt("%t[%D_%D_%T_%T]%n[%i_%L_%N_%f_%l_%m_%%]", lm).get_result() << std::endl;
 
     // log_system::LogSink::ptr Stdoutptr = log_system::SinkFactory::create<log_system::StdoutSink>();
     // log_system::LogSink::ptr Fileptr = log_system::SinkFactory::create<log_system::FileSink>("./data/file.log");
