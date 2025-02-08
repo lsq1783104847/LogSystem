@@ -31,7 +31,7 @@ namespace log_system
         {
             if (!std::cout.good())
                 return false;
-            std::cout << msg;
+            std::cout << msg << std::flush;
             return std::cout.good();
         }
     };
@@ -55,7 +55,7 @@ namespace log_system
         {
             if (!_state || !_ofs.good())
                 return false;
-            _ofs << msg;
+            _ofs << msg << std::flush;
             return _ofs.good();
         }
 
@@ -103,7 +103,7 @@ namespace log_system
                 _ofs.open(_cur_filename, std::ios::binary | std::ios::app);
                 _state = _ofs.is_open();
             }
-            _ofs << msg;
+            _ofs << msg << std::flush;
             return _ofs.good();
         }
 

@@ -8,6 +8,8 @@
 #include "level.hpp"
 #include "format_message.hpp"
 #include "sink.hpp"
+#include "buffer.hpp"
+#include "asyn_worker.hpp"
 
 #define MAX_MSG 4096
 
@@ -18,8 +20,8 @@ namespace log_system
     {
     public:
         using ptr = std::shared_ptr<Logger>;
-        Logger(const std::string &logger_name, const std::string &fmt_str,
-               const std::vector<LogSink::ptr> &sinks, Level::value val = Level::value::DEBUG)
+        Logger(const std::string &logger_name, const std::vector<LogSink::ptr> &sinks,
+               Level::value val = Level::value::DEBUG, const std::string &fmt_str = "[%L][%D_%T][%f:%l][%N:%i][%m]%n")
             : _logger_name(logger_name), _fmt_str(fmt_str),
               _sinks(sinks.begin(), sinks.end()), _limit_out_level(val) {}
         // 供用户调用输出日志信息,成功输出返回0，未达到输出等级返回1，出错返回-1
@@ -29,15 +31,15 @@ namespace log_system
                 return 1;
             va_list p;
             va_start(p, msg);
-            char buffer[MAX_MSG];
-            if (vsnprintf(buffer, MAX_MSG, msg, p) < 0)
+            char msg_buffer[MAX_MSG] = {0};
+            if (vsnprintf(msg_buffer, MAX_MSG - 1, msg, p) < 0)
                 return -1;
             va_end(p);
 
-            LogMsg log_msg(filename, line, time(nullptr), std::this_thread::get_id(), _logger_name, buffer, val);
+            LogMsg log_msg(filename, line, time(nullptr), std::this_thread::get_id(), _logger_name, msg_buffer, val);
             std::string log_str = LogFmt(_fmt_str, log_msg).get_result();
-
-            log_mode(log_str);
+            if (!log_mode(log_str))
+                return -1;
 
             return 0;
         }
@@ -56,22 +58,20 @@ namespace log_system
     {
     public:
         using ptr = std::shared_ptr<SynLogger>;
-        SynLogger(const std::string &logger_name, const std::string &fmt_str,
-                  const std::vector<LogSink::ptr> &sinks, Level::value val = Level::value::DEBUG)
-            : Logger(logger_name, fmt_str, sinks, val) {}
+        SynLogger(const std::string &logger_name, const std::vector<LogSink::ptr> &sinks,
+                  Level::value val = Level::value::DEBUG, const std::string &fmt_str = "[%L][%D_%T][%f:%l][%N:%i][%m]%n")
+            : Logger(logger_name, sinks, val, fmt_str) {}
 
     protected:
         bool log_mode(const std::string &log_str) override
         {
-            std::unique_lock<std::mutex> lock(_mutex);
+            if (log_str == "")
+                return false;
+            bool ret = true;
             for (auto &sink : _sinks)
-                if (sink->log(log_str) == false)
-                    return false;
-            return true;
+                ret &= sink->log(log_str);
+            return ret;
         }
-
-    private:
-        std::mutex _mutex;
     };
 
     // 异步日志器
@@ -79,16 +79,31 @@ namespace log_system
     {
     public:
         using ptr = std::shared_ptr<AsynLogger>;
-        AsynLogger(const std::string &logger_name, const std::string &fmt_str,
-                   const std::vector<LogSink::ptr> &sinks, Level::value val = Level::value::DEBUG)
-            : Logger(logger_name, fmt_str, sinks, val) {}
+        AsynLogger(const std::string &logger_name, const std::vector<LogSink::ptr> &sinks,
+                   Level::value val = Level::value::DEBUG, const std::string &fmt_str = "[%L][%D_%T][%f:%l][%N:%i][%m]%n")
+            : Logger(logger_name, sinks, val, fmt_str) {}
 
     protected:
         bool log_mode(const std::string &log_str) override
         {
-            return true;
+            if (log_str == "")
+                return false;
+            bool ret = true;
+            for (auto &sink : _sinks)
+            {
+                ret &= AsynWorkerPool::get_instance(handle_buffer_data, thread_size)
+                           .push(Buffer_data(sink, log_str));
+            }
+            return ret;
+        }
+        static const size_t thread_size = DEFAULT_ASYN_THREAD_SIZE;
+        static bool handle_buffer_data(const Buffer_data &data)
+        {
+            return data._sink->log(data._log_str);
         }
     };
+
+    // 使用建造者模式来构造Logger，让用户直接通过建造者来创建Logger，从而简化用户的使用
 }
 
 #endif
