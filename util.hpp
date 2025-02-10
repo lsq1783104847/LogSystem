@@ -37,10 +37,13 @@ namespace log_system
                 ret.pop_back();
             return ret;
         }
-        // 检测文件路径path是否存在
+        // 检测文件路径path是否存在,不存在或路径错误都返回false
         bool file_exist(const std::string &path)
         {
-            if (access(path.c_str(), F_OK) == 0)
+            std::string ret = is_path(path);
+            if (ret == "")
+                return false;
+            if (access(ret.c_str(), F_OK) == 0)
                 return true;
             else
                 return false;
@@ -86,8 +89,52 @@ namespace log_system
             std::string ret = is_path(path);
             if (ret == "" || ret == "/")
                 return "";
+            if (ret[ret.size() - 1] == '/')
+                ret.pop_back();
             size_t pos = ret.find_last_of('/');
             return ret.substr(pos + 1);
+        }
+        // 传入相对路径，返回绝对路径，要求传入的相对路径是正确的，如果发生错误则返回空串
+        // 如果传入的就是绝对路径，那么就不做转化返回该路径,且返回的绝对路径中不含"."和".."
+        std::string path_transform(const std::string &path)
+        {
+            std::string ret = is_path(path);
+            if (ret == "")
+                return "";
+
+            std::string absolute_path = "/";
+            size_t lpos = 1, rpos = 1;
+
+            if (ret[0] != '/')
+            {
+                char *p = getcwd(NULL, 0);
+                if (p == nullptr)
+                    return "";
+                absolute_path = p;
+                free(p);
+                lpos = 0, rpos = 0;
+            }
+
+            while (lpos < ret.size())
+            {
+                rpos = ret.find_first_of('/', lpos);
+                std::string sstr = ret.substr(lpos, (rpos == std::string::npos ? rpos : rpos - lpos));
+                lpos = (rpos == std::string::npos ? rpos : rpos + 1);
+                if (sstr == ".")
+                    continue;
+                else if (sstr == "..")
+                    absolute_path = file_dir(absolute_path);
+                else
+                {
+                    if (absolute_path[absolute_path.size() - 1] != '/')
+                        absolute_path.push_back('/');
+                    absolute_path += sstr;
+                }
+            }
+
+            if (absolute_path[absolute_path.size() - 1] == '/' && absolute_path != "/")
+                absolute_path.pop_back();
+            return absolute_path;
         }
     }
 }
