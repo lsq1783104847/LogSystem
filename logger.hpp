@@ -90,18 +90,17 @@ namespace log_system
                 return false;
             bool ret = true;
             for (auto &sink : _sinks)
-            {
                 ret &= AsynWorkerPool::get_instance(handle_buffer_data, thread_size)
-                           .push(Buffer_data(sink, log_str));
-            }
+                           ->push(Buffer_data(sink, log_str));
             return ret;
         }
-        static const size_t thread_size = DEFAULT_ASYN_THREAD_SIZE;
+        static const size_t thread_size;
         static bool handle_buffer_data(const Buffer_data &data)
         {
             return data._sink->log(data._log_str);
         }
     };
+    const size_t AsynLogger::thread_size = DEFAULT_ASYN_THREAD_SIZE;
 
     // 使用建造者模式来构造Logger，让用户直接通过建造者来创建Logger，从而简化用户的使用
 }

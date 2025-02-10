@@ -10,12 +10,18 @@
 
 namespace log_system
 {
-#define DEFAULT_ASYN_THREAD_SIZE 5
+#define DEFAULT_ASYN_THREAD_SIZE 2
     // 设计为单例，将来所有的Asynlogger共用同一套异步工作线程池
     class AsynWorkerPool
     {
     public:
         using func_t = std::function<bool(const Buffer_data &buffer)>;
+        using ptr = std::shared_ptr<AsynWorkerPool>;
+        ~AsynWorkerPool()
+        {
+            for (auto &thread : _threads)
+                thread.join();
+        }
         bool push(const Buffer_data &buffer_data)
         {
             std::unique_lock<std::mutex> push_lock(_push_mutex);
@@ -26,9 +32,9 @@ namespace log_system
             _pop_cond.notify_all();
             return true;
         }
-        static AsynWorkerPool &get_instance(func_t func, size_t thread_size = DEFAULT_ASYN_THREAD_SIZE)
+        static AsynWorkerPool::ptr get_instance(func_t func, size_t thread_size = DEFAULT_ASYN_THREAD_SIZE)
         {
-            static AsynWorkerPool awp(func, thread_size);
+            static AsynWorkerPool::ptr awp(new AsynWorkerPool(func, thread_size));
             return awp;
         }
 
@@ -45,11 +51,6 @@ namespace log_system
         }
         AsynWorkerPool(const AsynWorkerPool &tp) = delete;
         AsynWorkerPool &operator=(const AsynWorkerPool &tp) = delete;
-        ~AsynWorkerPool()
-        {
-            for (auto &thread : _threads)
-                thread.join();
-        }
         void worker_thread()
         {
             while (1)

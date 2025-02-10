@@ -11,7 +11,7 @@ namespace log_system
 
     struct Buffer_data
     {
-        Buffer_data() = default;
+        Buffer_data() : _log_str(""), _sink(nullptr) {}
         Buffer_data(const LogSink::ptr &sink, const std::string &log_str) : _sink(sink), _log_str(log_str) {}
         std::string _log_str;
         LogSink::ptr _sink;
