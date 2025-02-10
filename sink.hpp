@@ -14,8 +14,10 @@
 
 namespace log_system
 {
-    // 文件落地基类,Sink对象内部自行保证多线程使用同一Sink对象进行落地时的线程安全
-    // 通过重写log()函数实现不同的日志落地方向
+    // 日志落地模块
+    // 日志落地基类,将来子类通过重写log()函数实现不同的日志落地方向
+    // 所有日志落地的对象内部自行保证多线程使用同一对象进行落地时的线程安全,即保证了多线程使用同一对象在调用log()函数进行日志落地时的线程安全
+    // 日志落地对象根据日志落地的位置保证全局唯一性,所有的日志落地对象都不可以直接创建使用，必须由每个类的静态成员函数get_sink()进行创建和获取，如果get_sink()返回nullptr就表示获取失败
     class LogSink
     {
     public:
@@ -23,8 +25,7 @@ namespace log_system
         virtual bool log(const std::string &msg) = 0;
         virtual ~LogSink() {};
     };
-    // 标准输出落地类
-    // 将日志输出到标准输出中
+    // 标准输出落地类，将日志输出到标准输出中
     class StdoutSink : public LogSink
     {
     public:
@@ -50,11 +51,10 @@ namespace log_system
         StdoutSink &operator=(const StdoutSink &tp) = delete;
 
     private:
-        std::mutex _mutex;
+        std::mutex _mutex; // 互斥锁，用于保证同一对象多线程下调用log()函数时的线程安全
     };
 
-    // 指定文件落地类
-    // 将日志输出到指定的文件中
+    // 指定文件落地类，将日志输出到指定的文件中
     class FileSink : public LogSink
     {
     public:
@@ -72,7 +72,6 @@ namespace log_system
             _ofs << msg << std::flush;
             return _ofs.good();
         }
-        // 通过该接口获取FileSink对象
         static FileSink::ptr get_sink(const std::string &path)
         {
             std::string absolute_path = Util::path_transform(path);
@@ -94,29 +93,33 @@ namespace log_system
         FileSink &operator=(const FileSink &tp) = delete;
         FileSink(const std::string &path)
         {
+            std::string absolute_path = Util::path_transform(path);
+            if (absolute_path == "")
+                _state = false;
             // 判断文件所在路径是否存在，不存在就先创建
-            _state = Util::create_dir(Util::file_dir(path));
+            if(_state)
+                _state = Util::create_dir(Util::file_dir(absolute_path));
             if (_state)
             {
-                _ofs.open(path, std::ios::binary | std::ios::app);
+                _ofs.open(absolute_path, std::ios::binary | std::ios::app);
                 _state = _ofs.is_open();
             }
         }
 
     protected:
-        std::mutex _mutex;
-        std::ofstream _ofs;
-        bool _state = true;
+        std::mutex _mutex;  // 互斥锁，用于保证同一对象多线程下调用log()函数时的线程安全
+        std::ofstream _ofs; // 文件流对象，用于管理打开的文件
+        bool _state = true; // 状态标志位，标识当前对象的状态
 
     private:
-        static std::unordered_map<std::string, FileSink::ptr> _filehash; // 所有FileSink对象交给_hash统一管理
-        static std::mutex _filehash_mutex;                               // 保证多线程操作_hash时的线程安全
+        static std::unordered_map<std::string, FileSink::ptr> _filehash; // 全局范围内的所有FileSink对象交给_filehash统一管理，以保证FileSink对象全局范围内的唯一性
+        static std::mutex _filehash_mutex;                               // 保证多线程操作_filehash时的线程安全
     };
     std::unordered_map<std::string, FileSink::ptr> FileSink::_filehash;
     std::mutex FileSink::_filehash_mutex;
 
-    // 滚动文件落地类
-     // 根据传入的基础文件名和最大大小限制，先将基础文件名结合当前时间（以秒为单位）形成完整的文件名，再将日志输出到该文件中\
+    // 滚动文件落地类 \
+    根据传入的基础文件名和最大大小限制，先将基础文件名结合当前时间（以秒为单位）形成完整的文件名，再将日志输出到该文件中\
     当前时间与日志目标输出文件的创建时间在同一秒内，则日志文件不发生滚动，不在同一秒内且日志文件超过最大大小限制才触发滚动\
     滚动后又以当前时间结合基础文件名创建新的文件，再将日志输出到新的文件中
     class RollFileSinkBySize : public FileSink
@@ -145,7 +148,6 @@ namespace log_system
             _ofs << msg << std::flush;
             return _ofs.good();
         }
-        // 通过该接口获取FileSink对象
         static RollFileSinkBySize::ptr get_sink(const std::string &path, long long max_size = DEFAULT_MAX_SIZE)
         {
             std::string absolute_path = Util::path_transform(path);
@@ -218,31 +220,20 @@ namespace log_system
         }
 
     protected:
-        std::string _base_fname;
-        std::string _fdir_path;
-        std::string _cur_filename;
-        time_t _last_time;   // 记录_cur_filename创建时的时间戳
-        long long _max_size; // 以字节为单位
+        std::string _base_fname;   // 文件名（仅仅只含文件的名字，不含路径）
+        std::string _fdir_path;    // 文件所处的目录的路径
+        std::string _cur_filename; // 当前文件流所管理的完整文件名（加上了时间构造出来的完整文件名路径）
+        time_t _last_time;         // 记录_cur_filename创建时的时间戳
+        long long _max_size;       // 滚动文件的最大大小(以字节为单位)
 
     private:
-        static std::unordered_map<std::string, RollFileSinkBySize::ptr> _roll_filehash; // 所有RollFileSinkBySize对象交给_hash统一管理
-        static std::mutex _roll_filehash_mutex;                                         // 保证多线程操作_hash时的线程安全
+        static std::unordered_map<std::string, RollFileSinkBySize::ptr> _roll_filehash; // 全局范围内的所有RollFileSinkBySize对象交给_roll_filehash统一管理，以保证RollFileSinkBySize对象全局范围内的唯一性
+        static std::mutex _roll_filehash_mutex;                                         // 保证多线程操作_roll_filehash时的线程安全
     };
     std::unordered_map<std::string, RollFileSinkBySize::ptr> RollFileSinkBySize::_roll_filehash;
     std::mutex RollFileSinkBySize::_roll_filehash_mutex;
 
-    // ...支持在此处扩展，可以根据使用需求实现更多的落地方向子类使得日志可以向更多的位置输出
-
-    // 统一使用工厂来创建落地类的对象（简单工厂模式的应用）
-    // class SinkFactory
-    // {
-    // public:
-    //     template <typename SinkType, typename... Args>
-    //     static LogSink::ptr create(Args &&...args)
-    //     {
-    //         return std::make_shared<SinkType>(std::forward<Args>(args)...);
-    //     }
-    // };
+    // ...支持在此处扩展，可以根据使用需求自行实现更多的落地方向子类使得日志可以向更多的位置输出
 }
 
 #endif

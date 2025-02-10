@@ -8,6 +8,7 @@
 
 namespace log_system
 {
+    // 工具函数模块，为其他部分模块实现时提供了多个工具函数
     namespace Util
     {
 #define default_dir_mode 0775
