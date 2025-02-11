@@ -69,7 +69,7 @@ void asyn_test()
 
 int main()
 {
-    // syn_test();
-    asyn_test();
+    syn_test();
+    // asyn_test();
     return 0;
 }
