@@ -1,9 +1,8 @@
-#include <iostream>
-#include <cassert>
+// 该文件内主要是对该日志系统项目的使用样例编写，以告知用户该如何使用
+
 #include "log.h"
 
-using namespace std;
-
+// 供创建的线程运行的日志输出函数
 void test(const log_system::Logger::ptr &logger)
 {
     LOG_DEBUG(logger, "日志输出测试-DEBUG");
@@ -15,6 +14,7 @@ void test(const log_system::Logger::ptr &logger)
         LOG(logger, log_system::Level::ERROR, "日志输出测试-%d", i);
 }
 
+// 异步日志器使用样例
 void test1()
 {
     std::vector<log_system::LogSink::ptr> asynsinks1;
@@ -45,7 +45,7 @@ void test1()
     t2.join();
     t3.join();
 }
-
+// 同步日志器和异步日志器共同使用的样例
 void test2()
 {
     std::vector<log_system::LogSink::ptr> asynsinks;
@@ -72,7 +72,7 @@ void test2()
     t3.join();
     t4.join();
 }
-
+// 默认的root日志器的使用样例
 void test3()
 {
     log_system::Logger::ptr rootlogger = log_system::get_logger("root");
