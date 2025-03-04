@@ -54,7 +54,7 @@ void test(const std::string &logger_name, size_t thread_size, size_t log_size, s
 // 同步日志器性能测试
 void syn_test()
 {
-    log_system::add_logger("SynLogger", log_system::SYNC_LOGGER, {log_system::get_sink<log_system::FileSink>("./data/file.log")}, log_system::Level::DEBUG, "%m");
+    log_system::add_logger("SynLogger", log_system::SYNC_LOGGER, {log_system::get_sink<log_system::FileSink>("~/data/file.log")}, log_system::Level::DEBUG, "%m");
     // test("SynLogger", 1, 1000000, 100); // 单线程输出
     test("SynLogger", 3, 1000000, 100); // 多线程输出
 }
@@ -62,14 +62,14 @@ void syn_test()
 // （对于异步日志器只计算日志输出到异步线程池所提供的缓冲区中的时间，并不计算实际落入外设中的时间）
 void asyn_test()
 {
-    log_system::add_logger("AsynLogger", log_system::ASYNC_LOGGER, {log_system::get_sink<log_system::FileSink>("./data/file.log")}, log_system::Level::DEBUG, "%m");
+    log_system::add_logger("AsynLogger", log_system::ASYNC_LOGGER, {log_system::get_sink<log_system::FileSink>("~/data/file.log")}, log_system::Level::DEBUG, "%m");
     // test("AsynLogger", 1, 1000000, 100); // 单线程输出
     test("AsynLogger", 3, 1000000, 100); // 多线程输出
 }
 
 int main()
 {
-    syn_test();
-    // asyn_test();
+    // syn_test();
+    asyn_test();
     return 0;
 }

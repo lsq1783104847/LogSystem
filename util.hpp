@@ -12,18 +12,27 @@ namespace log_system
     namespace Util
     {
 #define default_dir_mode 0775
-        // 检查传入的文件路径path是否是个正确的路径,要求正确路径中不能有 "//"
+        // 检查传入的文件路径path是否是个正确的路径,要求正确路径中不能有 "//",如果以"~/"开头就将其转换成家目录
         // 如果是正确路径(绝对路径，相对路径均可)就将其补充完善并返回，如果不是正确路径就返回空字符串
-        std::string is_path(const std::string &path)
+        static std::string is_path(const std::string &path)
         {
             if (path.size() == 0 || path == "/")
                 return path;
             size_t rpos = 0, lpos = 0;
             std::string ret;
-            if (path[0] != '/')
-                ret += "./";
-            else
+            size_t pos = 0;
+            if (path[0] == '~' && (path.size() == 1 || path[1] == '/'))
+            {
+                char *p = getenv("HOME");
+                if (p == nullptr)
+                    return "";
+                ret += p;
+                pos = 1;
+            }
+            else if (path[0] == '/')
                 lpos = 1;
+            else
+                ret += "./";
             while (lpos < path.size())
             {
                 rpos = path.find_first_of('/', lpos);
@@ -33,7 +42,7 @@ namespace log_system
                     break;
                 lpos = rpos + 1;
             }
-            ret += path;
+            ret += path.substr(pos);
             if (ret[ret.size() - 1] == '/')
                 ret.pop_back();
             return ret;
