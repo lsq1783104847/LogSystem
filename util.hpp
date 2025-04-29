@@ -14,7 +14,7 @@ namespace log_system
 #define default_dir_mode 0775
         // 检查传入的文件路径path是否是个正确的路径,要求正确路径中不能有 "//",如果以"~/"开头就将其转换成家目录
         // 如果是正确路径(绝对路径，相对路径均可)就将其补充完善并返回，如果不是正确路径就返回空字符串
-        static std::string is_path(const std::string &path)
+        std::string is_path(const std::string &path)
         {
             if (path.size() == 0 || path == "/")
                 return path;
