@@ -1,5 +1,5 @@
-#ifndef LEVEL_HPP
-#define LEVEL_HPP
+#ifndef LOG_SYSTEM_LEVEL_HPP
+#define LOG_SYSTEM_LEVEL_HPP
 
 #include <string>
 

@@ -1,5 +1,5 @@
-#ifndef UTIL_HPP
-#define UTIL_HPP
+#ifndef LOG_SYSTEM_UTIL_HPP
+#define LOG_SYSTEM_UTIL_HPP
 
 #include <string>
 #include <unistd.h>

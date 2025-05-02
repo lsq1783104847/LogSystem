@@ -1,5 +1,5 @@
-#ifndef FORMATER_HPP
-#define FORMATER_HPP
+#ifndef LOG_SYSTEM_FORMATER_HPP
+#define LOG_SYSTEM_FORMATER_HPP
 
 #include <sstream>
 #include <memory>

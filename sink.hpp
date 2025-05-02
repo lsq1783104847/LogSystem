@@ -1,5 +1,5 @@
-#ifndef SINK_HPP
-#define SINK_HPP
+#ifndef LOG_SYSTEM_SINK_HPP
+#define LOG_SYSTEM_SINK_HPP
 
 #include <unistd.h>
 #include <string>
@@ -97,7 +97,7 @@ namespace log_system
             if (absolute_path == "")
                 _state = false;
             // 判断文件所在路径是否存在，不存在就先创建
-            if(_state)
+            if (_state)
                 _state = Util::create_dir(Util::file_dir(absolute_path));
             if (_state)
             {

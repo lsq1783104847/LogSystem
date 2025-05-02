@@ -1,5 +1,5 @@
-#ifndef LOGGER_HPP
-#define LOGGER_HPP
+#ifndef LOG_SYSTEM_LOGGER_HPP
+#define LOG_SYSTEM_LOGGER_HPP
 
 #include <vector>
 #include <mutex>

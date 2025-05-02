@@ -1,5 +1,5 @@
-#ifndef ASYN_WORKER_HPP
-#define ASYN_WORKER_HPP
+#ifndef LOG_SYSTEM_ASYN_WORKER_HPP
+#define LOG_SYSTEM_ASYN_WORKER_HPP
 
 #include <mutex>
 #include <thread>

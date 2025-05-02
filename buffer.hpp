@@ -1,5 +1,5 @@
-#ifndef BUFFER_HPP
-#define BUFFER_HPP
+#ifndef LOG_SYSTEM_BUFFER_HPP
+#define LOG_SYSTEM_BUFFER_HPP
 
 #include <vector>
 #include <string>

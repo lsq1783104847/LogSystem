@@ -6,4 +6,4 @@ performance_test:performance_test.cc
 	g++ -o $@ $^ -std=c++17 -lpthread
 .PHONY:clean
 clean:
-	rm example performance_test;rm -r data
+	rm example performance_test;rm -r ./data
